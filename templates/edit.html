@@ -12,21 +12,33 @@
     <input type="submit" value="Add It"/>
 </form>
 
-<form action="/crossoff" method="post">
-    <label>
-        I want to cross off
-        <select name="crossed-off-movie">
-            <!-- need to loop over watchlist to create option elements -->
-            {% for movie in watchlist: %}
-                <option value="{{ movie }}">{{ movie }}</option>
-            {% endfor %}
-        </select>
-        from my watchlist.
-    </label>
-    <input type="submit" value="Cross It Off"/>
-</form>
+{% if watchlist|length > 0 %}
+    <form action="/crossoff" method="post">
+        <label>
+            I want to cross off
+            <select name="crossed-off-movie">
+                <!-- need to loop over watchlist to create option elements -->
+                {% for movie in watchlist: %}
+                    <option value="{{ movie }}">{{ movie }}</option>
+                {% endfor %}
+            </select>
+            from my watchlist.
+        </label>
+        <input type="submit" value="Cross It Off"/>
+    </form>
+{% endif %}
 
 {% if error %}
   <p class='error'>{{ error }}</p>
+{% else %}
+    {% if watchlist|length > 0 %}
+        <h2>My Watchlist</h2>
+        {% for movie in watchlist %}
+        <ul>
+            <li name=new_movie>{{movie}}</li>
+        </ul>
+        {% endfor %}
+    {% endif %}
+
 {% endif %}
 {% endblock %}

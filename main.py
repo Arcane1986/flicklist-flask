@@ -14,23 +14,21 @@ terrible_movies = [
     "Starship Troopers"
 ]
 
-def get_current_watchlist():
-    # returns user's current watchlist--hard coded for now
-    return [ "Star Wars", "Minions", "Freaky Friday", "My Favorite Martian" ]
+current_watchlist = []
 
 
 @app.route("/crossoff", methods=['POST'])
 def crossoff_movie():
     crossed_off_movie = request.form['crossed-off-movie']
 
-    if crossed_off_movie not in get_current_watchlist():
+    if crossed_off_movie not in current_watchlist:
         # the user tried to cross off a movie that isn't in their list,
         # so we redirect back to the front page and tell them what went wrong
         error = "'{0}' is not in your Watchlist, so you can't cross it off!".format(crossed_off_movie)
 
         # redirect to homepage, and include error as a query parameter in the URL
         return redirect("/?error=" + error)
-
+    current_watchlist.remove(crossed_off_movie)
     # if we didn't redirect by now, then all is well
     return render_template('crossoff.html', crossed_off_movie=crossed_off_movie)
 
@@ -51,11 +49,12 @@ def add_movie():
 
     # 'escape' the user's input so that if they typed HTML, it doesn't mess up our site
     new_movie_escaped = cgi.escape(new_movie, quote=True)
+    current_watchlist.append(new_movie_escaped)
 
     # TODO:
     # Create a template called add-confirmation.html inside your /templates directory
     # Use that template to render the confirmation message instead of this temporary message below
-    return "Confirmation Message Under Construction..."
+    return render_template('add-confirmation.html', new_movie=new_movie_escaped)
 
 # TODO:
 # Modify the edit.html file to display the watchlist in an unordered list with bullets in front of each movie.
@@ -71,6 +70,6 @@ def add_movie():
 @app.route("/")
 def index():
     encoded_error = request.args.get("error")
-    return render_template('edit.html', watchlist=get_current_watchlist(), error=encoded_error and cgi.escape(encoded_error, quote=True))
+    return render_template('edit.html', watchlist=current_watchlist, error=encoded_error and cgi.escape(encoded_error, quote=True))
 
 app.run()
