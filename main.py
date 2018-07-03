@@ -1,6 +1,7 @@
 from flask import Flask, request, redirect, render_template
 from flask_sqlalchemy import SQLAlchemy
 import cgi
+from enum import Enum
 
 app = Flask(__name__)
 app.config['DEBUG'] = True      # displays runtime errors in the browser, too
@@ -9,11 +10,18 @@ app.config['SQLALCHEMY_ECHO'] = True
 
 db = SQLAlchemy(app)
 
+class Rating(Enum):
+    one = "*"
+    two = "**"
+    three = "***"
+    four = "****"
+    five = "*****"
+
 class Movie(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(120))
     watched = db.Column(db.Boolean)
-    
+    rating = db.Column(db.Enum(Rating))
     # TODO: add a ratings column to the Movie table
 
     def __init__(self, name):
@@ -38,7 +46,7 @@ def get_current_watchlist():
 def get_watched_movies():
     # For now, we are just pretending
     # returns the list of movies the user has already watched and crossed off
-    return [ "The Matrix", "The Princess Bride", "Buffy the Vampire Slayer" ]
+    return Movie.query.filter_by(watched=True).all()
 
 # Create a new route called rate_movie which handles a POST request on /rating-confirmation
 @app.route("/rating-confirmation", methods=['POST'])
@@ -47,7 +55,7 @@ def rate_movie():
     rating = request.form['rating']
 
     movie = Movie.query.get(movie_id)
-    if movie not in get_watched_movies():
+    if not movie.watched:
         # the user tried to rate a movie that isn't in their list,
         # so we redirect back to the front page and tell them what went wrong
         error = "'{0}' is not in your Watched Movies list, so you can't rate it!".format(movie)
@@ -59,7 +67,11 @@ def rate_movie():
     
     # TODO: make a persistent change to the model so that you STORE the rating in the database
     # (Note: the next TODO is in templates/ratings.html)
-    
+    try:
+        movie.rating = Rating(rating)
+        db.session.commit()
+    except ValueError:
+        return redirect(f'/?error=Tsk tsk tsk, {rating} is not a valid option.')
     return render_template('rating-confirmation.html', movie=movie, rating=rating)
 
 
@@ -110,4 +122,5 @@ def index():
     return render_template('edit.html', watchlist=get_current_watchlist(), error=encoded_error and cgi.escape(encoded_error, quote=True))
 
 if __name__ == "__main__":
+    db.create_all()
     app.run()
